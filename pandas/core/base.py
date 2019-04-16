@@ -9,7 +9,6 @@ import warnings
 import numpy as np
 
 import pandas._libs.lib as lib
-import pandas.compat as compat
 from pandas.compat import PYPY
 from pandas.compat.numpy import function as nv
 from pandas.errors import AbstractMethodError
@@ -362,9 +361,9 @@ class SelectionMixin(object):
             # if we have a dict of any non-scalars
             # eg. {'A' : ['mean']}, normalize all to
             # be list-likes
-            if any(is_aggregator(x) for x in compat.itervalues(arg)):
+            if any(is_aggregator(x) for x in arg.values()):
                 new_arg = OrderedDict()
-                for k, v in compat.iteritems(arg):
+                for k, v in arg.items():
                     if not isinstance(v, (tuple, list, dict)):
                         new_arg[k] = [v]
                     else:
@@ -401,7 +400,7 @@ class SelectionMixin(object):
             else:
                 # deprecation of renaming keys
                 # GH 15931
-                keys = list(compat.iterkeys(arg))
+                keys = list(arg.keys())
                 if (isinstance(obj, ABCDataFrame) and
                         len(obj.columns.intersection(keys)) != len(keys)):
                     nested_renaming_depr()
@@ -432,12 +431,12 @@ class SelectionMixin(object):
                 return an OrderedDict
                 """
                 result = OrderedDict()
-                for fname, agg_how in compat.iteritems(arg):
+                for fname, agg_how in arg.items():
                     result[fname] = func(fname, agg_how)
                 return result
 
             # set the final keys
-            keys = list(compat.iterkeys(arg))
+            keys = list(arg.keys())
             result = OrderedDict()
 
             # nested renamer
@@ -449,7 +448,7 @@ class SelectionMixin(object):
                     result, results = OrderedDict(), result
                     for r in results:
                         result.update(r)
-                    keys = list(compat.iterkeys(result))
+                    keys = list(result.keys())
 
                 else:
 
@@ -493,13 +492,12 @@ class SelectionMixin(object):
 
             def is_any_series():
                 # return a boolean if we have *any* nested series
-                return any(isinstance(r, ABCSeries)
-                           for r in compat.itervalues(result))
+                return any(isinstance(r, ABCSeries) for r in result.values())
 
             def is_any_frame():
                 # return a boolean if we have *any* nested series
                 return any(isinstance(r, ABCDataFrame)
-                           for r in compat.itervalues(result))
+                           for r in result.values())
 
             if isinstance(result, list):
                 return concat(result, keys=keys, axis=1, sort=True), True
@@ -699,12 +697,7 @@ class IndexOpsMixin(object):
         """
         Return the first element of the underlying data as a python scalar.
         """
-        try:
-            return self.values.item()
-        except IndexError:
-            # copy numpy's message here because Py26 raises an IndexError
-            raise ValueError('can only convert an array of size 1 to a '
-                             'Python scalar')
+        return self.values.item()
 
     @property
     def data(self):
