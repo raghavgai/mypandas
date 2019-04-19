@@ -249,6 +249,7 @@ Performance Improvements
 - Improved performance of :meth:`pandas.core.groupby.GroupBy.quantile` (:issue:`20405`)
 - Improved performance of :meth:`read_csv` by faster tokenizing and faster parsing of small float numbers (:issue:`25784`)
 - Improved performance of :meth:`read_csv` by faster parsing of N/A and boolean values (:issue:`25804`)
+- Improved performance of :meth:DataFrame.`to_csv` when write datetime dtype data (:issue:`25708`)
 
 .. _whatsnew_0250.bug_fixes:
 
@@ -400,6 +401,7 @@ Reshaping
 - Bug in :func:`concat` where the resulting ``freq`` of two :class:`DatetimeIndex` with the same ``freq`` would be dropped (:issue:`3232`).
 - Bug in :func:`merge` where merging with equivalent Categorical dtypes was raising an error (:issue:`22501`)
 - Bug in :class:`DataFrame` constructor when passing non-empty tuples would cause a segmentation fault (:issue:`25691`)
+- Bug in :func:`pandas.cut` where large bins could incorrectly raise an error due to an integer overflow (:issue:`26045`)
 
 Sparse
 ^^^^^^
