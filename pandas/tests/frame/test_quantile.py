@@ -4,10 +4,19 @@ import pytest
 import pandas as pd
 from pandas import DataFrame, Series, Timestamp
 import pandas.util.testing as tm
-from pandas.util.testing import assert_frame_equal, assert_series_equal
 
 
 class TestDataFrameQuantile:
+    def test_quantile_sparse(self):
+        # GH#17198
+        s = pd.Series(pd.SparseArray([1, 2]))
+        s1 = pd.Series(pd.SparseArray([3, 4]))
+        df = pd.DataFrame({0: s, 1: s1})
+        result = df.quantile()
+
+        expected = pd.Series([1.5, 3.5], name=0.5)
+        tm.assert_series_equal(result, expected)
+
     def test_quantile(self, datetime_frame):
         from numpy import percentile
 
@@ -28,19 +37,19 @@ class TestDataFrameQuantile:
         df = DataFrame({"col1": ["A", "A", "B", "B"], "col2": [1, 2, 3, 4]})
         rs = df.quantile(0.5)
         xp = df.median().rename(0.5)
-        assert_series_equal(rs, xp)
+        tm.assert_series_equal(rs, xp)
 
         # axis
         df = DataFrame({"A": [1, 2, 3], "B": [2, 3, 4]}, index=[1, 2, 3])
         result = df.quantile(0.5, axis=1)
         expected = Series([1.5, 2.5, 3.5], index=[1, 2, 3], name=0.5)
-        assert_series_equal(result, expected)
+        tm.assert_series_equal(result, expected)
 
         result = df.quantile([0.5, 0.75], axis=1)
         expected = DataFrame(
             {1: [1.5, 1.75], 2: [2.5, 2.75], 3: [3.5, 3.75]}, index=[0.5, 0.75]
         )
-        assert_frame_equal(result, expected, check_index_type=True)
+        tm.assert_frame_equal(result, expected, check_index_type=True)
 
         # We may want to break API in the future to change this
         # so that we exclude non-numeric along the same axis
@@ -48,7 +57,7 @@ class TestDataFrameQuantile:
         df = DataFrame([[1, 2, 3], ["a", "b", 4]])
         result = df.quantile(0.5, axis=1)
         expected = Series([3.0, 4.0], index=[0, 1], name=0.5)
-        assert_series_equal(result, expected)
+        tm.assert_series_equal(result, expected)
 
     def test_quantile_axis_mixed(self):
 
@@ -63,7 +72,7 @@ class TestDataFrameQuantile:
         )
         result = df.quantile(0.5, axis=1)
         expected = Series([1.5, 2.5, 3.5], name=0.5)
-        assert_series_equal(result, expected)
+        tm.assert_series_equal(result, expected)
 
         # must raise
         with pytest.raises(TypeError):
@@ -77,18 +86,18 @@ class TestDataFrameQuantile:
         result = df.quantile(0.5, axis=0)
 
         expected = Series([2.0, 3.0], index=["A", "B"], name=0.5)
-        assert_series_equal(result, expected)
+        tm.assert_series_equal(result, expected)
 
         expected = df.quantile(0.5, axis="index")
-        assert_series_equal(result, expected)
+        tm.assert_series_equal(result, expected)
 
         result = df.quantile(0.5, axis=1)
 
         expected = Series([1.5, 2.5, 3.5], index=[1, 2, 3], name=0.5)
-        assert_series_equal(result, expected)
+        tm.assert_series_equal(result, expected)
 
         result = df.quantile(0.5, axis="columns")
-        assert_series_equal(result, expected)
+        tm.assert_series_equal(result, expected)
 
         msg = "No axis named -1 for object type <class 'pandas.core.frame.DataFrame'>"
         with pytest.raises(ValueError, match=msg):
@@ -128,14 +137,14 @@ class TestDataFrameQuantile:
             interpolation="nearest",
         )
         expected = Series(exp, index=[1, 2, 3], name=0.5, dtype="float64")
-        assert_series_equal(result, expected)
+        tm.assert_series_equal(result, expected)
 
         # axis
         result = df.quantile([0.5, 0.75], axis=1, interpolation="lower")
         expected = DataFrame(
             {1: [1.0, 1.0], 2: [2.0, 2.0], 3: [3.0, 3.0]}, index=[0.5, 0.75]
         )
-        assert_frame_equal(result, expected)
+        tm.assert_frame_equal(result, expected)
 
         # test degenerate case
         df = DataFrame({"x": [], "y": []})
@@ -152,7 +161,7 @@ class TestDataFrameQuantile:
             index=[0.25, 0.5],
             columns=["a", "b", "c"],
         )
-        assert_frame_equal(result, expected)
+        tm.assert_frame_equal(result, expected)
 
     def test_quantile_interpolation_datetime(self, datetime_frame):
         # see gh-10174
@@ -183,7 +192,7 @@ class TestDataFrameQuantile:
             index=[0.25, 0.5],
             columns=["a", "b", "c"],
         )
-        assert_frame_equal(result, expected)
+        tm.assert_frame_equal(result, expected)
 
         # axis = 1
         result = df.quantile([0.25, 0.5], axis=1)
@@ -196,7 +205,7 @@ class TestDataFrameQuantile:
         expected = DataFrame(
             {"x": [np.nan, np.nan], "y": [np.nan, np.nan]}, index=[0.1, 0.9]
         )
-        assert_frame_equal(result, expected)
+        tm.assert_frame_equal(result, expected)
 
     def test_quantile_datetime(self):
         df = DataFrame({"a": pd.to_datetime(["2010", "2011"]), "b": [0, 5]})
@@ -210,14 +219,14 @@ class TestDataFrameQuantile:
         expected = Series(
             [Timestamp("2010-07-02 12:00:00"), 2.5], index=["a", "b"], name=0.5
         )
-        assert_series_equal(result, expected)
+        tm.assert_series_equal(result, expected)
 
         # datetime w/ multi
         result = df.quantile([0.5], numeric_only=False)
         expected = DataFrame(
             [[Timestamp("2010-07-02 12:00:00"), 2.5]], index=[0.5], columns=["a", "b"]
         )
-        assert_frame_equal(result, expected)
+        tm.assert_frame_equal(result, expected)
 
         # axis = 1
         df["c"] = pd.to_datetime(["2011", "2012"])
@@ -227,7 +236,7 @@ class TestDataFrameQuantile:
             index=[0, 1],
             name=0.5,
         )
-        assert_series_equal(result, expected)
+        tm.assert_series_equal(result, expected)
 
         result = df[["a", "c"]].quantile([0.5], axis=1, numeric_only=False)
         expected = DataFrame(
@@ -235,7 +244,7 @@ class TestDataFrameQuantile:
             index=[0.5],
             columns=[0, 1],
         )
-        assert_frame_equal(result, expected)
+        tm.assert_frame_equal(result, expected)
 
         # empty when numeric_only=True
         # FIXME (gives empty frame in 0.18.1, broken in 0.19.0)
@@ -439,7 +448,7 @@ class TestDataFrameQuantile:
         )
         tm.assert_frame_equal(res, exp)
 
-    def test_quantile_empty(self):
+    def test_quantile_empty_no_rows(self):
 
         # floats
         df = DataFrame(columns=["a", "b"], dtype="float64")
@@ -467,3 +476,17 @@ class TestDataFrameQuantile:
 
         # FIXME (gives NaNs instead of NaT in 0.18.1 or 0.19.0)
         # res = df.quantile(0.5, numeric_only=False)
+
+    def test_quantile_empty_no_columns(self):
+        # GH#23925 _get_numeric_data may drop all columns
+        df = pd.DataFrame(pd.date_range("1/1/18", periods=5))
+        df.columns.name = "captain tightpants"
+        result = df.quantile(0.5)
+        expected = pd.Series([], index=[], name=0.5, dtype=np.float64)
+        expected.index.name = "captain tightpants"
+        tm.assert_series_equal(result, expected)
+
+        result = df.quantile([0.5])
+        expected = pd.DataFrame([], index=[0.5], columns=[])
+        expected.columns.name = "captain tightpants"
+        tm.assert_frame_equal(result, expected)

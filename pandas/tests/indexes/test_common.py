@@ -35,7 +35,8 @@ class TestCommon:
 
         for level in "wrong", ["wrong"]:
             with pytest.raises(
-                KeyError, match=re.escape("'Level wrong must be same as name (None)'")
+                KeyError,
+                match=r"'Requested level \(wrong\) does not match index name \(None\)'",
             ):
                 indices.droplevel(level)
 
@@ -157,16 +158,10 @@ class TestCommon:
         assert indices.name == name
         assert indices.names == [name]
 
-    def test_dtype_str(self, indices):
-        with tm.assert_produces_warning(FutureWarning):
-            dtype = indices.dtype_str
-            assert isinstance(dtype, str)
-            assert dtype == str(indices.dtype)
-
     def test_hash_error(self, indices):
         index = indices
         with pytest.raises(
-            TypeError, match=("unhashable type: {0.__name__!r}".format(type(index)))
+            TypeError, match=f"unhashable type: '{type(index).__name__}'"
         ):
             hash(indices)
 
@@ -200,8 +195,9 @@ class TestCommon:
         with pytest.raises(IndexError, match=msg):
             indices.unique(level=3)
 
-        msg = r"Level wrong must be same as name \({}\)".format(
-            re.escape(indices.name.__repr__())
+        msg = (
+            fr"Requested level \(wrong\) does not match index name "
+            fr"\({re.escape(indices.name.__repr__())}\)"
         )
         with pytest.raises(KeyError, match=msg):
             indices.unique(level="wrong")

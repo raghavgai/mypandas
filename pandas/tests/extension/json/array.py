@@ -44,7 +44,7 @@ class JSONDtype(ExtensionDtype):
         if string == cls.name:
             return cls()
         else:
-            raise TypeError("Cannot construct a '{}' from '{}'".format(cls, string))
+            raise TypeError(f"Cannot construct a '{cls.__name__}' from '{string}'")
 
 
 class JSONArray(ExtensionArray):
@@ -80,6 +80,9 @@ class JSONArray(ExtensionArray):
         elif isinstance(item, abc.Iterable):
             # fancy indexing
             return type(self)([self.data[i] for i in item])
+        elif isinstance(item, slice) and item == slice(None):
+            # Make sure we get a view
+            return type(self)(self.data)
         else:
             # slice
             return type(self)(self.data[item])
@@ -103,11 +106,11 @@ class JSONArray(ExtensionArray):
                     assert isinstance(v, self.dtype.type)
                     self.data[k] = v
 
-    def __len__(self):
+    def __len__(self) -> int:
         return len(self.data)
 
     @property
-    def nbytes(self):
+    def nbytes(self) -> int:
         return sys.getsizeof(self.data)
 
     def isna(self):

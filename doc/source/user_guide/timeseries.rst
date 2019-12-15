@@ -376,8 +376,6 @@ We subtract the epoch (midnight at January 1, 1970 UTC) and then floor divide by
 Using the ``origin`` Parameter
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-.. versionadded:: 0.20.0
-
 Using the ``origin`` parameter, one can specify an alternative starting point for creation
 of a ``DatetimeIndex``. For example, to use 1960-01-01 as the starting date:
 
@@ -607,8 +605,6 @@ We are stopping on the included end-point as it is part of the index:
 
    dft['2013-1-15':'2013-1-15 12:30:00']
 
-.. versionadded:: 0.18.0
-
 ``DatetimeIndex`` partial string indexing also works on a ``DataFrame`` with a ``MultiIndex``:
 
 .. ipython:: python
@@ -776,7 +772,6 @@ There are several time/date properties that one can access from ``Timestamp`` or
     week,"The week ordinal of the year"
     dayofweek,"The number of the day of the week with Monday=0, Sunday=6"
     weekday,"The number of the day of the week with Monday=0, Sunday=6"
-    weekday_name,"The name of the day in a week (ex: Friday)"
     quarter,"Quarter of the date: Jan-Mar = 1, Apr-Jun = 2, etc."
     days_in_month,"The number of days in the month of the datetime"
     is_month_start,"Logical indicating if first day of month (defined by frequency)"
@@ -1514,11 +1509,6 @@ Converting to Python datetimes
 Resampling
 ----------
 
-.. warning::
-
-   The interface to ``.resample`` has changed in 0.18.0 to be more groupby-like and hence more flexible.
-   See the :ref:`whatsnew docs <whatsnew_0180.breaking.resample>` for a comparison with prior versions.
-
 Pandas has a simple, powerful, and efficient functionality for performing
 resampling operations during frequency conversion (e.g., converting secondly
 data into 5-minutely data). This is extremely common in, but not limited to,
@@ -1528,8 +1518,8 @@ financial applications.
 on each of its groups. See some :ref:`cookbook examples <cookbook.resample>` for
 some advanced strategies.
 
-Starting in version 0.18.1, the ``resample()`` function can be used directly from
-``DataFrameGroupBy`` objects, see the :ref:`groupby docs <groupby.transform.window_resample>`.
+The ``resample()`` method can be used directly from ``DataFrameGroupBy`` objects,
+see the :ref:`groupby docs <groupby.transform.window_resample>`.
 
 .. note::
 
@@ -1600,10 +1590,10 @@ labels.
 
         s = pd.date_range('2000-01-01', '2000-01-05').to_series()
         s.iloc[2] = pd.NaT
-        s.dt.weekday_name
+        s.dt.day_name()
 
         # default: label='left', closed='left'
-        s.resample('B').last().dt.weekday_name
+        s.resample('B').last().dt.day_name()
 
     Notice how the value for Sunday got pulled back to the previous Friday.
     To get the behavior where the value for Sunday is pushed to Monday, use
@@ -1611,7 +1601,7 @@ labels.
 
     .. ipython:: python
 
-        s.resample('B', label='right', closed='right').last().dt.weekday_name
+        s.resample('B', label='right', closed='right').last().dt.day_name()
 
 The ``axis`` parameter can be set to 0 or 1 and allows you to resample the
 specified axis for a ``DataFrame``.
@@ -1927,8 +1917,6 @@ objects:
 
 Period dtypes
 ~~~~~~~~~~~~~
-
-.. versionadded:: 0.19.0
 
 ``PeriodIndex`` has a custom ``period`` dtype. This is a pandas extension
 dtype similar to the :ref:`timezone aware dtype <timeseries.timezone_series>` (``datetime64[ns, tz]``).

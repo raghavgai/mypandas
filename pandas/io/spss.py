@@ -15,12 +15,12 @@ def read_spss(
     """
     Load an SPSS file from the file path, returning a DataFrame.
 
-    .. versionadded 0.25.0
+    .. versionadded:: 0.25.0
 
     Parameters
     ----------
     path : string or Path
-        File path
+        File path.
     usecols : list-like, optional
         Return a subset of the columns. If None, return all columns.
     convert_categoricals : bool, default is True

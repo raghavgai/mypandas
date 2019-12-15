@@ -438,10 +438,6 @@ columns:
 
 .. _visualization.box.return:
 
-.. warning::
-
-   The default changed from ``'dict'`` to ``'axes'`` in version 0.19.0.
-
 In ``boxplot``, the return type can be controlled by the ``return_type``, keyword. The valid choices are ``{"axes", "dict", "both", None}``.
 Faceting, created by ``DataFrame.boxplot`` with the ``by``
 keyword, will affect the output type as well:
@@ -1152,10 +1148,10 @@ To plot data on a secondary y-axis, use the ``secondary_y`` keyword:
 
 .. ipython:: python
 
-   df.A.plot()
+   df['A'].plot()
 
    @savefig series_plot_secondary_y.png
-   df.B.plot(secondary_y=True, style='g')
+   df['B'].plot(secondary_y=True, style='g')
 
 .. ipython:: python
    :suppress:
@@ -1194,6 +1190,21 @@ with "(right)" in the legend. To turn off the automatic marking, use the
 
    plt.close('all')
 
+.. _plotting.formatters:
+
+Custom formatters for timeseries plots
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. versionchanged:: 1.0.0
+
+Pandas provides custom formatters for timeseries plots. These change the
+formatting of the axis labels for dates and times. By default,
+the custom formatters are applied only to plots created by pandas with
+:meth:`DataFrame.plot` or :meth:`Series.plot`. To have them apply to all
+plots, including those made by matplotlib, set the option
+``pd.options.plotting.matplotlib.register_converters = True`` or use
+:meth:`pandas.plotting.register_matplotlib_converters`.
+
 Suppressing tick resolution adjustment
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -1209,7 +1220,7 @@ Here is the default behavior, notice how the x-axis tick labeling is performed:
    plt.figure()
 
    @savefig ser_plot_suppress.png
-   df.A.plot()
+   df['A'].plot()
 
 .. ipython:: python
    :suppress:
@@ -1223,7 +1234,7 @@ Using the ``x_compat`` parameter, you can suppress this behavior:
    plt.figure()
 
    @savefig ser_plot_suppress_parm.png
-   df.A.plot(x_compat=True)
+   df['A'].plot(x_compat=True)
 
 .. ipython:: python
    :suppress:
@@ -1239,9 +1250,9 @@ in ``pandas.plotting.plot_params`` can be used in a `with statement`:
 
    @savefig ser_plot_suppress_context.png
    with pd.plotting.plot_params.use('x_compat', True):
-       df.A.plot(color='r')
-       df.B.plot(color='g')
-       df.C.plot(color='b')
+       df['A'].plot(color='r')
+       df['B'].plot(color='g')
+       df['C'].plot(color='b')
 
 .. ipython:: python
    :suppress:
@@ -1250,8 +1261,6 @@ in ``pandas.plotting.plot_params`` can be used in a `with statement`:
 
 Automatic date tick adjustment
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-.. versionadded:: 0.20.0
 
 ``TimedeltaIndex`` now uses the native matplotlib
 tick locator methods, it is useful to call the automatic
@@ -1632,18 +1641,3 @@ when plotting a large number of points.
    :suppress:
 
     plt.close('all')
-
-
-.. _rplot:
-
-
-Trellis plotting interface
---------------------------
-
-.. warning::
-
-    The ``rplot`` trellis plotting interface has been **removed**. Please use
-    external packages like `seaborn <https://github.com/mwaskom/seaborn>`_ for
-    similar but more refined functionality and refer to our 0.18.1 documentation
-    `here <http://pandas.pydata.org/pandas-docs/version/0.18.1/visualization.html>`__
-    for how to convert to using it.

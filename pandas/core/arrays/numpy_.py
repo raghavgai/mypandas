@@ -1,4 +1,5 @@
 import numbers
+from typing import Union
 
 import numpy as np
 from numpy.lib.mixins import NDArrayOperatorsMixin
@@ -10,11 +11,13 @@ from pandas.util._validators import validate_fillna_kwargs
 
 from pandas.core.dtypes.dtypes import ExtensionDtype
 from pandas.core.dtypes.generic import ABCIndexClass, ABCSeries
-from pandas.core.dtypes.inference import is_array_like, is_list_like
+from pandas.core.dtypes.inference import is_array_like
+from pandas.core.dtypes.missing import isna
 
 from pandas import compat
 from pandas.core import nanops
-from pandas.core.algorithms import searchsorted
+from pandas.core.algorithms import searchsorted, take, unique
+from pandas.core.construction import extract_array
 from pandas.core.missing import backfill_1d, pad_1d
 
 from .base import ExtensionArray, ExtensionOpsMixin
@@ -42,8 +45,8 @@ class PandasDtype(ExtensionDtype):
         self._name = dtype.name
         self._type = dtype.type
 
-    def __repr__(self):
-        return "PandasDtype({!r})".format(self.name)
+    def __repr__(self) -> str:
+        return f"PandasDtype({repr(self.name)})"
 
     @property
     def numpy_dtype(self):
@@ -69,7 +72,12 @@ class PandasDtype(ExtensionDtype):
 
     @classmethod
     def construct_from_string(cls, string):
-        return cls(np.dtype(string))
+        try:
+            return cls(np.dtype(string))
+        except TypeError as err:
+            raise TypeError(
+                f"Cannot construct a 'PandasDtype' from '{string}'"
+            ) from err
 
     def construct_array_type(cls):
         return PandasArray
@@ -88,7 +96,7 @@ class PandasArray(ExtensionArray, ExtensionOpsMixin, NDArrayOperatorsMixin):
     """
     A pandas ExtensionArray for NumPy data.
 
-    .. versionadded :: 0.24.0
+    .. versionadded:: 0.24.0
 
     This is mostly for internal compatibility, and is not especially
     useful on its own.
@@ -115,15 +123,18 @@ class PandasArray(ExtensionArray, ExtensionOpsMixin, NDArrayOperatorsMixin):
     # pandas internals, which turns off things like block consolidation.
     _typ = "npy_extension"
     __array_priority__ = 1000
+    _ndarray: np.ndarray
 
     # ------------------------------------------------------------------------
     # Constructors
 
-    def __init__(self, values, copy=False):
+    def __init__(self, values: Union[np.ndarray, "PandasArray"], copy: bool = False):
         if isinstance(values, type(self)):
             values = values._ndarray
         if not isinstance(values, np.ndarray):
-            raise ValueError("'values' must be a NumPy array.")
+            raise ValueError(
+                f"'values' must be a NumPy array, not {type(values).__name__}"
+            )
 
         if values.ndim != 1:
             raise ValueError("PandasArray must be 1-dimensional.")
@@ -221,36 +232,27 @@ class PandasArray(ExtensionArray, ExtensionOpsMixin, NDArrayOperatorsMixin):
         return result
 
     def __setitem__(self, key, value):
-        from pandas.core.internals.arrays import extract_array
-
         value = extract_array(value, extract_numpy=True)
 
-        if not lib.is_scalar(key) and is_list_like(key):
+        scalar_key = lib.is_scalar(key)
+        scalar_value = lib.is_scalar(value)
+
+        if not scalar_key and scalar_value:
             key = np.asarray(key)
 
-        if not lib.is_scalar(value):
-            value = np.asarray(value)
+        if not scalar_value:
+            value = np.asarray(value, dtype=self._ndarray.dtype)
 
-        values = self._ndarray
-        t = np.result_type(value, values)
-        if t != self._ndarray.dtype:
-            values = values.astype(t, casting="safe")
-            values[key] = value
-            self._dtype = PandasDtype(t)
-            self._ndarray = values
-        else:
-            self._ndarray[key] = value
+        self._ndarray[key] = value
 
-    def __len__(self):
+    def __len__(self) -> int:
         return len(self._ndarray)
 
     @property
-    def nbytes(self):
+    def nbytes(self) -> int:
         return self._ndarray.nbytes
 
     def isna(self):
-        from pandas import isna
-
         return isna(self._ndarray)
 
     def fillna(self, value=None, method=None, limit=None):
@@ -262,8 +264,8 @@ class PandasArray(ExtensionArray, ExtensionOpsMixin, NDArrayOperatorsMixin):
         if is_array_like(value):
             if len(value) != len(self):
                 raise ValueError(
-                    "Length of 'value' does not match. Got ({}) "
-                    " expected {}".format(len(value), len(self))
+                    f"Length of 'value' does not match. Got ({len(value)}) "
+                    f" expected {len(self)}"
                 )
             value = value[mask]
 
@@ -281,8 +283,9 @@ class PandasArray(ExtensionArray, ExtensionOpsMixin, NDArrayOperatorsMixin):
         return new_values
 
     def take(self, indices, allow_fill=False, fill_value=None):
-        from pandas.core.algorithms import take
-
+        if fill_value is None:
+            # Primarily for subclasses
+            fill_value = self.dtype.na_value
         result = take(
             self._ndarray, indices, allow_fill=allow_fill, fill_value=fill_value
         )
@@ -298,8 +301,6 @@ class PandasArray(ExtensionArray, ExtensionOpsMixin, NDArrayOperatorsMixin):
         return self._ndarray, -1
 
     def unique(self):
-        from pandas import unique
-
         return type(self)(unique(self._ndarray))
 
     # ------------------------------------------------------------------------
@@ -310,8 +311,8 @@ class PandasArray(ExtensionArray, ExtensionOpsMixin, NDArrayOperatorsMixin):
         if meth:
             return meth(skipna=skipna, **kwargs)
         else:
-            msg = "'{}' does not implement reduction '{}'"
-            raise TypeError(msg.format(type(self).__name__, name))
+            msg = f"'{type(self).__name__}' does not implement reduction '{name}'"
+            raise TypeError(msg)
 
     def any(self, axis=None, out=None, keepdims=False, skipna=True):
         nv.validate_any((), dict(out=out, keepdims=keepdims))
@@ -458,9 +459,7 @@ class PandasArray(ExtensionArray, ExtensionOpsMixin, NDArrayOperatorsMixin):
 
             return cls(result)
 
-        return compat.set_function_name(
-            arithmetic_method, "__{}__".format(op.__name__), cls
-        )
+        return compat.set_function_name(arithmetic_method, f"__{op.__name__}__", cls)
 
     _create_comparison_method = _create_arithmetic_method
 

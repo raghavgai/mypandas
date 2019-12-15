@@ -819,8 +819,6 @@ The ``indicator`` argument will also accept string arguments, in which case the 
 Merge dtypes
 ~~~~~~~~~~~~
 
-.. versionadded:: 0.19.0
-
 Merging will preserve the dtype of the join keys.
 
 .. ipython:: python
@@ -844,8 +842,6 @@ resulting dtype will be upcast.
 
    pd.merge(left, right, how='outer', on='key')
    pd.merge(left, right, how='outer', on='key').dtypes
-
-.. versionadded:: 0.20.0
 
 Merging will preserve ``category`` dtypes of the mergands. See also the section on :ref:`categoricals <categorical.merge>`.
 
@@ -885,7 +881,7 @@ The merged result:
 .. note::
 
    The category dtypes must be *exactly* the same, meaning the same categories and the ordered attribute.
-   Otherwise the result will coerce to ``object`` dtype.
+   Otherwise the result will coerce to the categories' dtype.
 
 .. note::
 
@@ -1385,8 +1381,6 @@ fill/interpolate missing data:
 
 Merging asof
 ~~~~~~~~~~~~
-
-.. versionadded:: 0.19.0
 
 A :func:`merge_asof` is similar to an ordered left-join except that we match on
 nearest key rather than equal keys. For each row in the ``left`` ``DataFrame``,
